@@ -2,7 +2,7 @@ import os
 import sys
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import yt_dlp
+import youtube_dl
 import threading
 
 
@@ -80,8 +80,8 @@ class YouTubeAudioDownloader:
             return
 
         try:
-            with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-                print(f"Fetching video info for URL: {url}")
+            with youtube_dl.YoutubeDL({'quiet': True}) as ydl:
+                print(f"Attempting to fetch video info for URL: {url}")
                 info = ydl.extract_info(url, download=False)
                 print("Video info fetched successfully.")
                 audio_info = self.get_best_audio(info)
@@ -127,7 +127,11 @@ class YouTubeAudioDownloader:
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': os.path.join(self.temp_dir, '%(title)s.%(ext)s'),
-            'postprocessors': [],
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': format_,
+                'preferredquality': bitrate,
+            }],
             'quiet': True,
             'progress_hooks': [self.progress_hook],
             'nocheckcertificate': True,
@@ -135,7 +139,7 @@ class YouTubeAudioDownloader:
             'verbose': True,
         }
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 print(f"Downloading audio for URL: {url}")
                 info = ydl.extract_info(url, download=True)
                 filename = ydl.prepare_filename(info)
@@ -159,8 +163,8 @@ class YouTubeAudioDownloader:
         for file in os.listdir(self.temp_dir):
             os.remove(os.path.join(self.temp_dir, file))
 
-
 if __name__ == "__main__":
     root = tk.Tk()
     app = YouTubeAudioDownloader(root)
     root.mainloop()
+
